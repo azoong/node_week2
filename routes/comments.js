@@ -5,24 +5,26 @@ const Posts = require("../schemas/posts")
 const router = express.Router();
 
 
-//댓글 작성
+//댓글 작성  
 router.post("/:postId", async (req, res) => {
     const { postId } = req.params;
     const { user, password, content } = req.body;
     const createdAt = new Date();
 
     const post = await Posts.find({ _id : postId })
-    if (post.length){
+    if (!content){
+        await res.status(400).json({Message: "댓글 내용을 입력해주세요."})
+    }else{
         await Comments.create({ user, password, content, createdAt, postId });
-        res.status(201).json({message : "댓글을 생성하였습니다."});
+        res.status(201).json({comment : Comments , message : "댓글을 생성하였습니다."});
     }
 
 });
 
-//댓글 조회
+//댓글 조회  
 router.get("/:postId", async (req, res) => {
     const { postId } = req.params; 
-    const comments = await Comments.find({ postId : postId })
+    const comments = await (await Comments.find({ postId : postId })).reverse()
   
     res.json({
         data : comments.map((comment)=>({
@@ -34,13 +36,19 @@ router.get("/:postId", async (req, res) => {
     })
 })
 
-//댓글 수정
+//댓글 수정  
 
 router.put("/:commentId", async (req, res) => {
     const { password, content } = req.body;
     const { commentId } = req.params; 
-    const comments = await Comments.find({ _id :commentId  })
-    if  (comments.length){
+    const [comments] = await Comments.find({ _id :commentId  })
+    if (!content){
+        await res.status(400).json({Message: "댓글 내용을 입력해주세요."})
+        return
+    }if (comments.password !== password){
+        await res.status(400).json({Message: "비밀번호가 틀립니다."})
+        return
+    }else{    
         await Comments.updateOne({_id : commentId}, {$set: { password, content} }) 
         res.json({ message : "댓글을 수정하였습니다." })
     }
