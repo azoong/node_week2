@@ -1,8 +1,10 @@
 const mongoose = require("mongoose");
+require('dotenv').config();
+
 
 const connect = () => {
   mongoose
-    .connect("mongodb://localhost:27017/blog")
+    .connect(process.env.MongoDB)
     .catch(err => console.log(err));
 };
 

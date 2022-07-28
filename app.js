@@ -3,7 +3,9 @@ const postsRouter = require("./routes/posts");
 const commentsRouter = require("./routes/comments");
 const indexRouter = require("./routes/")
 const app = express();
-const port = 3000;
+require('dotenv').config();
+
+process.env.Port
 
 
 //db연결
