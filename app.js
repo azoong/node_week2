@@ -5,7 +5,7 @@ const indexRouter = require("./routes/")
 const app = express();
 require('dotenv').config();
 
-process.env.Port
+const port = process.env.Port
 
 
 //db연결
