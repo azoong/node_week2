@@ -43,11 +43,9 @@ router.put("/:commentId", async (req, res) => {
     const { commentId } = req.params; 
     const [comments] = await Comments.find({ _id :commentId  })
     if (!content){
-        await res.status(400).json({Message: "댓글 내용을 입력해주세요."})
-        return
-    }if (comments.password !== password){
-        await res.status(400).json({Message: "비밀번호가 틀립니다."})
-        return
+        res.status(400).json({Message: "댓글 내용을 입력해주세요."})
+    }else if (comments.password !== password){
+        res.status(400).json({Message: "비밀번호가 틀립니다."})
     }else{    
         await Comments.updateOne({_id : commentId}, {$set: { password, content} }) 
         res.json({ message : "댓글을 수정하였습니다." })
