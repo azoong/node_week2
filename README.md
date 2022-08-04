@@ -1,5 +1,5 @@
-# node_week2
-
+# blog_api
+## API 2주차 과제
 <aside>
 ✅ 과제 요구 사항: `mongoose`를 `sequelize`로 변경하기!
 
