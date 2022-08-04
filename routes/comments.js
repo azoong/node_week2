@@ -1,22 +1,27 @@
 const express = require('express');
-const Comments = require("../schemas/comments")
-const Posts = require("../schemas/posts")
+
+const { Comment } = require("../models");
+const { Post } = require("../models");
+const authMiddleware = require("../middlewares/auth_middlewares")
 
 const router = express.Router();
 
+router.get("/" ,(req, res ) => {
+    res.send("welcome to comment")
+}) 
 
-//댓글 작성  
-router.post("/:postId", async (req, res) => {
+// 댓글 작성  
+router.post("/:postId", authMiddleware, async (req, res) => {
+    const { nickname }= res.locals.user
+    const { comment } = req.body;
     const { postId } = req.params;
-    const { user, password, content } = req.body;
-    const createdAt = new Date();
-
-    const post = await Posts.find({ _id : postId })
-    if (!content){
-        await res.status(400).json({Message: "댓글 내용을 입력해주세요."})
+    if(!nickname){
+        res.status(400).json({errorMessage: "로그인을 해주세요"})
+    }else if (!comment){
+        res.status(400).json({errorMessage: "댓글 내용을 입력해주세요."})
     }else{
-        await Comments.create({ user, password, content, createdAt, postId });
-        res.status(201).json({comment : Comments , message : "댓글을 생성하였습니다."});
+        Comment.create({ nickname, comment, postId });
+        res.status(201).json({message : "댓글을 생성하였습니다."});
     }
 
 });
@@ -24,49 +29,60 @@ router.post("/:postId", async (req, res) => {
 //댓글 조회  
 router.get("/:postId", async (req, res) => {
     const { postId } = req.params; 
-    const comments = await (await Comments.find({ postId : postId })).reverse()
+    const comments = await (await Comment.findAll({where: {postId: postId}})).reverse()
   
     res.json({
         data : comments.map((comment)=>({
-            commentId : comment._id,
-            user : comment.user,
-            content : comment.content,
-            createdAt : comment.createdAt
+            postId : comment.postId,
+            commentId : comment.commentId,
+            nickname : comment.nickname,
+            comment : comment.comment,
+            createdAt : comment.createdAt,
+            updatedAt : comment.updatedAt
         }))
     })
 })
 
 //댓글 수정  
 
-router.put("/:commentId", async (req, res) => {
-    const { password, content } = req.body;
-    const { commentId } = req.params; 
-    const [comments] = await Comments.find({ _id :commentId  })
-    if (!content){
-        res.status(400).json({Message: "댓글 내용을 입력해주세요."})
-    }else if (comments.password !== password){
-        res.status(400).json({Message: "비밀번호가 틀립니다."})
+router.put("/:commentid", authMiddleware, async (req, res) => {
+    const { nickname }= res.locals.user
+    const { comment } = req.body;
+    const { commentid } = req.params;
+    
+    const comments = await Comment.findOne({where: {commentId: commentid}})
+    
+    if(!nickname){
+        res.status(400).json({errorMessage: "로그인을 해주세요"})
+    }else if ( nickname !== comments.nickname ){
+        res.status(400).json({errorMessage: "본인 댓글만 수정 가능합니다."})
+    }else if (!comment){
+        res.status(400).json({errorMessage: "댓글 내용을 입력해주세요."})
     }else{    
-        await Comments.updateOne({_id : commentId}, {$set: { password, content} }) 
-        res.json({ message : "댓글을 수정하였습니다." })
+        await comments.update({ comment: comment }) 
+        res.status(201).json({ message : "댓글을 수정하였습니다." })
     }
 })
 
 
 
+
 //댓글 삭제
 
-router.delete("/:commentId", async (req, res) =>{
-    const {password}  = req.body;
-    const { commentId } = req.params;
-    const [clear] = await Comments.find({ _id : commentId })  
-    if (clear.password === password){
-        await Comments.deleteOne({_id : commentId})
-        res.json({ message : "댓글을 삭제하였습니다."})    
+router.delete("/:commentid", authMiddleware, async (req, res) =>{
+    const { nickname }= res.locals.user
+    const { commentid } = req.params;
+    const comments = await Comment.findOne({where: {commentId: commentid}})
+
+    if (!nickname){
+        res.status(400).json({errorMessage: "로그인을 해주세요"})
+    }else if ( nickname !== comments.nickname ){
+        res.status(400).json({errorMessage: "본인 댓글만 삭제 가능합니다."})
     }else{
-        await res.json({ errorMessage: "비밀번호가 틀립니다."})
+        await comments.destroy()
+        res.json({ message : "댓글을 삭제하였습니다."})    
     }
-    
+   
 })
 
 
